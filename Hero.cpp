@@ -1,51 +1,131 @@
 #include <iostream>
 #include <string>
-using namespace std; 
+#include <algorithm>
+#include <cstdlib>
 
+using namespace std; 
 
 class Hero {
 protected :
     string nom; 
-    int pv, attaque, defense, vitesse; 
+    int pv, pvMax, attaque, defense, vitesse; 
     
 public :
 
-    Hero() : nom(""), pv(0), attaque(0), defense(0), vitesse(0){}
+    Hero() : nom(""), pv(0), pvMax(0), attaque(0), defense(0), vitesse(0){}
 
     Hero(string nom, int pv, int attaque, int defense, int vitesse) {
         this->nom = nom;
         this->pv = pv;
+        this->pvMax = pv;
         this->attaque = attaque;
         this->defense = defense;
         this->vitesse = vitesse; 
     }
 
-    //Destructeur virtuel de Hero
     virtual ~Hero() {}
 
     void afficherStats() const {
-        cout << nom << " PV : "<< pv<<" Attaque : "<<attaque<<" Defense : "<< defense<< " Vitesse : "<<vitesse<<endl; 
+        cout << nom << " PV : " << pv
+             << " Attaque : " << attaque
+             << " Defense : " << defense
+             << " Vitesse : " << vitesse << endl; 
     }
 
     virtual int getClasse() const = 0; 
-
     virtual int calculerDegats(const Hero& cible) const = 0;
 
     virtual void perdrePV(int montant) {
         pv -= montant;
-        if (pv < 0) {
-            pv = 0; 
-        }
-    };
+        if (pv < 0) pv = 0; 
+    }
 
-    virtual void effetDebutTour() {};
+    virtual void effetDebutTour() {}
+    virtual void effetFinTour() {} 
 
-    virtual void effetFinTour() {}; 
-
-    //Fonction pour savoir si le hero est vivant ou non
     bool estVivant() const {
         return pv > 0; 
     }
 
+    int getDefense() const { return defense; }
+    int getAttaque() const { return attaque; }
+    int getVitesse() const { return vitesse; }
+    int getPV() const { return pv; }
+    int getPVMax() const { return pvMax; }
+};
 
-}; 
+/* =========================
+   GUERRIER
+   ========================= */
+class Guerrier : public Hero {
+public: 
+    Guerrier(string nom, int pv, int attaque, int defense, int vitesse)
+        : Hero(nom, pv, attaque, defense, vitesse) {}
+
+    int getClasse() const override {
+        return 1;
+    }
+
+    int calculerDegats(const Hero& cible) const override {
+        float bonus = 1.0f;
+
+        if (pv < 0.3f * pvMax) {
+            bonus = 1.2f;
+        }
+
+        int degats = (attaque * bonus) / max(1, cible.getDefense());
+        return max(1, degats);
+    }
+};
+
+/* =========================
+   MAGE
+   ========================= */
+class Mage : public Hero {
+public:
+    Mage(string nom, int pv, int attaque, int defense, int vitesse)
+        : Hero(nom, pv, attaque, defense, vitesse) {}
+
+    int getClasse() const override {
+        return 2;
+    }
+
+    int calculerDegats(const Hero& cible) const override {
+        int defenseReduite = cible.getDefense() * 0.7;
+
+        float facteur = 0.8f + (rand() % 41) / 100.0f;
+
+        int degats = (attaque / max(1, defenseReduite)) * facteur;
+        return max(1, degats);
+    }
+};
+
+/* =========================
+   ARCHER
+   ========================= */
+class Archer : public Hero {
+public:
+    Archer(string nom, int pv, int attaque, int defense, int vitesse)
+        : Hero(nom, pv, attaque, defense, vitesse) {}
+
+    int getClasse() const override {
+        return 3;
+    }
+
+    int calculerDegats(const Hero& cible) const override {
+        int degats = attaque / max(1, cible.getDefense());
+
+        if (rand() % 100 < 20) {
+            degats *= 2;
+        }
+
+        return max(1, degats);
+    }
+
+    void perdrePV(int montant) override {
+        if (rand() % 100 < 15) {
+            return;
+        }
+        Hero::perdrePV(montant);
+    }
+};
