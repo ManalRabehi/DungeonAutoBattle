@@ -8,6 +8,10 @@ class Hero {
 protected :
     string nom; 
     int pv, pvMax, attaque, defense, vitesse; 
+    // états
+    bool saignement = false;
+    bool brulure = false;
+    int bouclier = 0;
     
 public :
 
@@ -25,21 +29,39 @@ public :
     virtual ~Hero() {}
 
     void afficherStats() const {
-        cout << nom << " PV : " << pv
-             << " Attaque : " << attaque
-             << " Defense : " << defense
-             << " Vitesse : " << vitesse << endl; 
+            cout << nom << " PV : " << pv
+                 << " Attaque : " << attaque
+                 << " Defense : " << defense
+                 << " Vitesse : " << vitesse;
+            if (saignement) { cout << " [Saignement]"; }
+            if (brulure) { cout << " [Brûlure]"; }
+            if (bouclier > 0) { cout << " [Bouclier: " << bouclier << "]"; }
+            cout << endl;
     }
 
     virtual int getClasse() const = 0; 
     virtual int calculerDegats(const Hero& cible) const = 0;
 
     virtual void perdrePV(int montant) {
-        pv -= montant;
-        if (pv < 0) pv = 0; 
+        if (bouclier > 0) {
+            int bloque = min(bouclier, montant);
+            bouclier -= bloque;
+            montant -= bloque;
+        }
+        pv -= max(0, montant);
+        if (pv < 0) pv = 0;
     }
 
-    virtual void effetDebutTour() {}
+    virtual void effetDebutTour() {
+        if (saignement) {
+            pv -= 5;
+            if (pv < 0) pv = 0;
+        }
+        if (brulure) {
+            pv -= 8;
+            if (pv < 0) pv = 0;
+        }
+    }
     virtual void effetFinTour() {} 
 
     bool estVivant() const {
@@ -55,6 +77,11 @@ public :
     virtual void restaurerPV() {
         pv = pvMax; 
     }
+
+    void appliquerSaignement() { saignement = true; }
+    void appliquerBrulure() { brulure = true; }
+    void ajouterBouclier(int montant) { bouclier += montant; }
+
 };
 
 /* =========================
@@ -127,72 +154,138 @@ public:
 
     void perdrePV(int montant) override {
         if (rand() % 100 < 15) {
-            return;
+            return; // esquive
         }
         Hero::perdrePV(montant);
     }
 };
 
+/* =========================
+   PALADIN
+   ========================= */
+
+class Paladin : public Hero {
+public:
+    Paladin(string nom, int pv, int attaque, int defense, int vitesse)
+        : Hero(nom, pv, attaque, defense, vitesse) {}
+    int getClasse() const override { return 4; }
+    int calculerDegats(const Hero& cible) const override {
+        int degats = attaque / max(1, cible.getDefense());
+        return max(1, degats);
+    }
+    void effetFinTour() override {
+        int regen = max(1, static_cast<int>(pvMax * 0.05));
+        pv += regen;
+        if (pv > pvMax) pv = pvMax;
+    }
+};
+
+/* =========================
+   ASSASSIN
+   ========================= */
+
+class Assassin : public Hero {
+public:
+    Assassin(string nom, int pv, int attaque, int defense, int vitesse)
+        : Hero(nom, pv, attaque, defense, vitesse) {}
+    int getClasse() const override { return 5; }
+    int calculerDegats(const Hero& cible) const override {
+        int degats = attaque * 1.5 / max(1, cible.getDefense());
+        if (rand() % 100 < 40) degats *= 2;
+        return max(1, degats);
+    }
+    void effetFinTour() override {
+        int regen = max(1, static_cast<int>(pvMax * 0.05));
+        pv += regen;
+        if (pv > pvMax) pv = pvMax;
+    }
+};
+
+/* =========================
+   DRUIDE
+   ========================= */
+
+class Druide : public Hero {
+public:
+    Druide(string nom, int pv, int attaque, int defense, int vitesse)
+        : Hero(nom, pv, attaque, defense, vitesse) {}
+
+    int getClasse() const override {
+        return 6;
+    }
+
+    int calculerDegats(const Hero& cible) const override {
+        return attaque / max(1, cible.getDefense());
+    }
+};
+
+// =========================
+// OBJETS
+// =========================
+class Objet {
+public:
+    virtual ~Objet() {}
+    virtual void appliquer(Hero& h) = 0;
+};
+
+class Potion : public Objet {
+public:
+    void appliquer(Hero& h) override { h.restaurerPV(); }
+};
+
+class Anneau : public Objet {
+public:
+    void appliquer(Hero& h) override { cout << h.getPV() << " bonus attaque temporaire !\n"; }
+};
+
 Hero* genererHeroAleatoire() {
-    int type = rand() % 3;
+    int type = rand() % 6;
     int pv = rand() % 51 + 50;
     int attaque = rand() % 51 + 50;
     int defense = rand() % 51 + 50; 
     int vitesse = rand() % 51 + 50; 
 
     switch(type) {
-        case 0: 
-            defense = int(defense * 1.2); 
-            return new Guerrier("Guerrier", pv, attaque, defense, vitesse);
-        case 1: 
-            attaque = int(attaque * 1.2); 
-            return new Mage("Mage", pv, attaque, defense, vitesse);
-        case 2: 
-            vitesse = int(vitesse * 1.2); 
-            return new Archer("Archer", pv, attaque, defense, vitesse);
-    }
+        case 0: defense = int(defense * 1.2); return new Guerrier("Guerrier", pv, attaque, defense, vitesse);
+        case 1: attaque = int(attaque * 1.2); return new Mage("Mage", pv, attaque, defense, vitesse);
+        case 2: vitesse = int(vitesse * 1.2); return new Archer("Archer", pv, attaque, defense, vitesse);
+        case 3: return new Paladin("Paladin", pv, attaque, defense, vitesse);
+        case 4: return new Assassin("Assassin", pv, attaque, defense, vitesse);
+        case 5: return new Druide("Druide", pv, attaque, defense, vitesse);
+    }   
     return nullptr;
 }
 
 int combat(Hero* h1, Hero* h2) {
-    Hero* premier;
-    Hero* second;
-    
-    if (h1->getVitesse() >= h2->getVitesse()) {
-        premier = h1;
-        second = h2; 
-    }else{
-        premier = h2;
-        second = h1; 
-    }
+    Hero* premier = (h1->getVitesse() >= h2->getVitesse()) ? h1 : h2;
+    Hero* second = (premier == h1) ? h2 : h1;
+
+    int tours = 0;
+    const int MAX_TOURS = 100; // sécurité anti-boucle infinie
 
     while (h1->estVivant() && h2->estVivant()) {
-        premier->effetDebutTour();
-        int degats1 = premier->calculerDegats(*second);
-        second->perdrePV(degats1);
-        premier->effetFinTour(); 
+        if (++tours > MAX_TOURS) {
+            cout << "Match nul après " << MAX_TOURS << " tours !\n";
+            return 0; // match nul
+        }
 
-        if (!second->estVivant()) break; 
+        premier->effetDebutTour();
+        second->perdrePV(premier->calculerDegats(*second));
+        premier->effetFinTour();
+        if (!second->estVivant()) break;
 
         second->effetDebutTour();
-        int degats2 = second->calculerDegats(*premier);
-        premier->perdrePV(degats2);
-        second->effetFinTour(); 
+        premier->perdrePV(second->calculerDegats(*premier));
+        second->effetFinTour();
     }
 
-    if (h1->estVivant()){
-        return 1;
-
-    }else{
-        return 2; 
-    }
+    return h1->estVivant() ? 1 : 2;
 }
 
-/*_____________
-  CLASSE JOUEUR
-  _____________
-*/
 
+// =========================
+// CLASSE JOUEUR
+// =========================
 
 class Joueur{
 private :
@@ -238,16 +331,12 @@ public :
     }
 
     void selectionnerEquipe(Hero* selection[3]) {
-        int j = 0; 
-        for (int i=0; i<6 && j<3; i++) {
-            if (equipe[i] != nullptr && equipe[i]->estVivant()) {
-                selection[j++] = equipe[i]; 
-            }
+        for (int k = 0; k < 3; k++) selection[k] = nullptr;
+        int j = 0;
+        for (int i = 0; i < 6 && j < 3; i++) {
+            if (equipe[i] && equipe[i]->estVivant()) selection[j++] = equipe[i];
         }
-        if (j < 3) {
-            cout<< "Attention il y a moins de 3 héros vivants disponibles !"<<endl;
-        }
-
+        if (j < 3) cout << "Moins de 3 héros vivants !\n";
     }
 
     void genererEquipeAleatoire(int n) {
@@ -266,6 +355,10 @@ public :
         cout<<endl;
     }
 }; 
+
+// =========================
+// COMBAT D'ÉQUIPES
+// =========================
 
 int combatEquipes(Joueur& j1, Joueur& j2) {
     Hero* equipe1[3];
