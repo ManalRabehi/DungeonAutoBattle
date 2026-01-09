@@ -185,6 +185,10 @@ int combat(Hero* h1, Hero* h2) {
     }
 }
 
+/*_____________
+  CLASSE JOUEUR
+  _____________
+*/
 
 
 class Joueur{
