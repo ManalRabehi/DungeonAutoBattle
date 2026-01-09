@@ -226,6 +226,7 @@ public :
         for (int i = 0; i<6; i++) {
             if (equipe[i] == nullptr) {
                 equipe[i] = h; 
+                return;
             }
         }
         cout << "Équipe pleine, impossible d'ajouter le héros !"<<endl;
@@ -262,3 +263,37 @@ public :
         cout<<endl;
     }
 }; 
+
+int combatEquipes(Joueur& j1, Joueur& j2) {
+    Hero* equipe1[3];
+    Hero* equipe2[3]; 
+
+    j1.selectionnerEquipe(equipe1);
+    j2.selectionnerEquipe(equipe2);
+
+    int i = 0;
+    int j = 0; 
+
+    while (i<3 && j<3) {
+        cout << "\nCombat entre : " <<j1.getNom() <<" (Héros : " << i + 1 << ") et "<< j2.getNom() << "(Héros : )"<< j + 1<< "\n"; 
+        int gagnant = combat(equipe1[i], equipe2[j]);
+
+        if (gagnant == 1) {
+            cout << j1.getNom() << "remporte ce duel ! ";
+            j++;
+        }else{
+            cout << j2.getNom() << "remporte ce duel ! ";
+            i++;
+        }
+
+    }
+    if (i == 3) {
+        cout << "Combat terminé !"<< "\n"<< j2.getNom()<< " gagne le combat d'équipes !";
+        return 2; 
+    }else{
+        cout << "Combat terminé !"<< "\n"<< j1.getNom()<< " gagne le combat d'équipes !";
+        return 1;
+    }
+    
+
+}
