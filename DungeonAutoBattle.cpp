@@ -4,7 +4,6 @@
 #include <cstdlib>
 
 using namespace std; 
-
 class Hero {
 protected :
     string nom; 
@@ -52,6 +51,10 @@ public :
     int getVitesse() const { return vitesse; }
     int getPV() const { return pv; }
     int getPVMax() const { return pvMax; }
+
+    virtual void restaurerPV() {
+        pv = pvMax; 
+    }
 };
 
 /* =========================
@@ -275,20 +278,22 @@ int combatEquipes(Joueur& j1, Joueur& j2) {
     int j = 0; 
 
     while (i<3 && j<3) {
-        cout << "\nCombat entre : " <<j1.getNom() <<" (Héros : " << i + 1 << ") et "<< j2.getNom() << "(Héros : )"<< j + 1<< "\n"; 
+        cout << "\nCombat entre : " <<j1.getNom() <<" (Héros : " << i + 1 << ") et "<< j2.getNom() << "(Héros : "<< j + 1<< ")\n"; 
         int gagnant = combat(equipe1[i], equipe2[j]);
 
         if (gagnant == 1) {
-            cout << j1.getNom() << "remporte ce duel ! ";
+            cout << j1.getNom() << " remporte ce duel ! ";
+            equipe1[i]->restaurerPV();
             j++;
         }else{
-            cout << j2.getNom() << "remporte ce duel ! ";
+            cout << j2.getNom() << " remporte ce duel ! ";
+            equipe2[j]->restaurerPV();
             i++;
         }
 
     }
     if (i == 3) {
-        cout << "Combat terminé !"<< "\n"<< j2.getNom()<< " gagne le combat d'équipes !";
+        cout << "\nCombat terminé !"<< "\n"<< j2.getNom()<< " gagne le combat d'équipes !";
         return 2; 
     }else{
         cout << "Combat terminé !"<< "\n"<< j1.getNom()<< " gagne le combat d'équipes !";
@@ -296,4 +301,26 @@ int combatEquipes(Joueur& j1, Joueur& j2) {
     }
     
 
+}
+
+int main() {
+    // Initialisation du hasard (UNE SEULE FOIS)
+    srand(time(0));
+
+    // Création des joueurs
+    Joueur joueur1("Alice");
+    Joueur joueur2("Bob");
+
+    // Génération aléatoire des équipes (6 héros chacun)
+    joueur1.genererEquipeAleatoire(6);
+    joueur2.genererEquipeAleatoire(6);
+
+    // Affichage des équipes
+    joueur1.afficherEquipe();
+    joueur2.afficherEquipe();
+
+    // Lancement du combat d'équipes
+    combatEquipes(joueur1, joueur2);
+
+    return 0;
 }
