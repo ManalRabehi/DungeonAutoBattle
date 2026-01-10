@@ -203,17 +203,24 @@ public:
 
 /* =========================
    DRUIDE
-   ========================= */
+   ========================= 
+   Classe dérivée de Hero.
+   Le Druide est un héros sans effet spécial.
+   Il sert d'exemple d'extension du jeu avec un nouveau type de héros.
+   */
 
 class Druide : public Hero {
 public:
+    // Constructeur de Druide 
     Druide(string nom, int pv, int attaque, int defense, int vitesse)
         : Hero(nom, pv, attaque, defense, vitesse) {}
 
+    // Getter de classe
     int getClasse() const override {
         return 6;
     }
 
+    // Calcul des dégats 
     int calculerDegats(const Hero& cible) const override {
         return attaque / max(1, cible.getDefense());
     }
@@ -222,22 +229,27 @@ public:
 // =========================
 // OBJETS
 // =========================
+// Classe abstraite représentant un objet utilisable par un héros.
 class Objet {
 public:
     virtual ~Objet() {}
     virtual void appliquer(Hero& h) = 0;
 };
 
+// La Potion restaure entièrement les points de vie du héros grâce à la méthode restaurerPV.
 class Potion : public Objet {
 public:
     void appliquer(Hero& h) override { h.restaurerPV(); }
 };
 
+// Exemple d'objet bonus d'attaque temporaire.
 class Anneau : public Objet {
 public:
     void appliquer(Hero& h) override { cout << h.getPV() << " bonus attaque temporaire !\n"; }
 };
 
+// Méthode de génération d'un héros aléatoire. Le type de héros est choisi aléatoirement grâce au random.
+// Les statistiques sont comprises entre 50 et 100.
 Hero* genererHeroAleatoire() {
     int type = rand() % 6;
     int pv = rand() % 51 + 50;
@@ -245,6 +257,7 @@ Hero* genererHeroAleatoire() {
     int defense = rand() % 51 + 50; 
     int vitesse = rand() % 51 + 50; 
 
+    // Le switch permet de regrouper les différents cas possible de héros (Guerrier, Mage...).
     switch(type) {
         case 0: defense = int(defense * 1.2); return new Guerrier("Guerrier", pv, attaque, defense, vitesse);
         case 1: attaque = int(attaque * 1.2); return new Mage("Mage", pv, attaque, defense, vitesse);
@@ -256,7 +269,11 @@ Hero* genererHeroAleatoire() {
     return nullptr;
 }
 
+// Méthode de combat complète entre deux héros.
+// Le héros le plus rapide commence et ensuite les héros s'attaquent à tour de rôle.
+// La méthode retourne 1 si le heros 1 gagne, 2 si le heros 2 gagne sinon 0 en cas de match nul.
 int combat(Hero* h1, Hero* h2) {
+    // Détermination de l'ordre selon la vitesse 
     Hero* premier = (h1->getVitesse() >= h2->getVitesse()) ? h1 : h2;
     Hero* second = (premier == h1) ? h2 : h1;
 
@@ -269,16 +286,18 @@ int combat(Hero* h1, Hero* h2) {
             return 0; // match nul
         }
 
+        //Tour du premier héros
         premier->effetDebutTour();
         second->perdrePV(premier->calculerDegats(*second));
         premier->effetFinTour();
         if (!second->estVivant()) break;
 
+        // Tour du second héros
         second->effetDebutTour();
         premier->perdrePV(second->calculerDegats(*premier));
         second->effetFinTour();
     }
-
+    // on retourne le vainqueur 
     return h1->estVivant() ? 1 : 2;
 }
 
@@ -287,6 +306,9 @@ int combat(Hero* h1, Hero* h2) {
 // CLASSE JOUEUR
 // =========================
 
+// Représente un joueur du jeu.
+// Un joueur possède un nom et une équipe de héros. Une équipe peut contenir jusqu'à 6 héros.
+
 class Joueur{
 private :
     string nom;
@@ -294,12 +316,14 @@ private :
 
 public :
 
+    // Constructeur par défaut
     Joueur() : nom(""){
         for (int i = 0; i<6; i++) {
             equipe[i] = nullptr; 
         }
     }
 
+    // Constructeur avec nom
     Joueur(string nom){
         this->nom = nom; 
         for (int i = 0; i<6; i++) {
@@ -307,6 +331,7 @@ public :
         }
     }
 
+    //Destructeur
     ~Joueur() {
         for (int i=0; i<6; i++) {
             if (equipe[i]) {
@@ -316,8 +341,11 @@ public :
         }
     }
 
+    // Getter du nom 
     string getNom() const {return nom;}
 
+    // Méthode pour ajouter un héros dans la première case libre de l'équipe.
+    // Si l'équipe est pleine le héros est supprimé.
     void ajouterHero(Hero* h) {
         for (int i = 0; i<6; i++) {
             if (equipe[i] == nullptr) {
@@ -330,6 +358,7 @@ public :
 
     }
 
+    // Méthode permettant de selectionner 3 héros pour le combat d'équipes.
     void selectionnerEquipe(Hero* selection[3]) {
         for (int k = 0; k < 3; k++) selection[k] = nullptr;
         int j = 0;
@@ -339,12 +368,14 @@ public :
         if (j < 3) cout << "Moins de 3 héros vivants !\n";
     }
 
+    // Méthode pour générer une équipe de héros aléatoires.
     void genererEquipeAleatoire(int n) {
         for (int i = 0; i < n && i<6; i++) {
             ajouterHero(genererHeroAleatoire()); 
         }
     }
 
+    //Permet d'afficher les statistiques de tous les héros du joueur
     void afficherEquipe() const {
         cout << "Équipe de "<<nom<<" : "<<endl;
         for (int i = 0; i<6; i++) {
@@ -360,7 +391,10 @@ public :
 // COMBAT D'ÉQUIPES
 // =========================
 
+// Combat automatique entre deux équipes de deux joueurs différents.
+// Chaque joueur séléctionne 3 héros et ensuite les héros s'affrontent dans l'ordre de selection.
 int combatEquipes(Joueur& j1, Joueur& j2) {
+    // Selection des équipes de combat
     Hero* equipe1[3];
     Hero* equipe2[3]; 
 
@@ -370,10 +404,12 @@ int combatEquipes(Joueur& j1, Joueur& j2) {
     int i = 0;
     int j = 0; 
 
+    // Enchainement des combats entre les héros
     while (i<3 && j<3) {
         cout << "\nCombat entre : " <<j1.getNom() <<" (Héros : " << i + 1 << ") et "<< j2.getNom() << "(Héros : "<< j + 1<< ")\n"; 
         int gagnant = combat(equipe1[i], equipe2[j]);
 
+        // Le héros gagnant récupère ses PV initiaux
         if (gagnant == 1) {
             cout << j1.getNom() << " remporte ce duel ! ";
             equipe1[i]->restaurerPV();
@@ -385,6 +421,7 @@ int combatEquipes(Joueur& j1, Joueur& j2) {
         }
 
     }
+    // On détermine le vainqueur final
     if (i == 3) {
         cout << "\nCombat terminé !"<< "\n"<< j2.getNom()<< " gagne le combat d'équipes !";
         return 2; 
@@ -396,15 +433,19 @@ int combatEquipes(Joueur& j1, Joueur& j2) {
 
 }
 
+
+//Test global du programme
+// Permet de générer les équipes et lancer le combat.
 int main() {
-    // Initialisation du hasard (UNE SEULE FOIS)
+
+    // Initialisation du hasard
     srand(time(0));
 
     // Création des joueurs
-    Joueur joueur1("Alice");
-    Joueur joueur2("Bob");
+    Joueur joueur1("Imane");
+    Joueur joueur2("Saci");
 
-    // Génération aléatoire des équipes (6 héros chacun)
+    // Génération aléatoire des équipes
     joueur1.genererEquipeAleatoire(6);
     joueur2.genererEquipeAleatoire(6);
 
