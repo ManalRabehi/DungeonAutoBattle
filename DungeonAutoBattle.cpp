@@ -1,9 +1,14 @@
-#include <iostream>
-#include <string>
-#include <algorithm>
-#include <cstdlib>
+#include <iostream> // Pour les entrées/sorties (cout, endl)
+#include <string> // Pour utiliser le type string
+#include <algorithm> // Pour les fonctions min() et max()
+#include <cstdlib> // Pour rand()
 
 using namespace std; 
+
+/*
+Classe abstraite Hero qui sert de classe mère pour toutes les classes dérivées
+Représente un héro générique du jeu
+*/
 class Hero {
 protected :
     string nom; 
@@ -11,12 +16,15 @@ protected :
     // états
     bool saignement = false;
     bool brulure = false;
+    // bouclier qui absorbe des dégâts
     int bouclier = 0;
     
 public :
+    // Constructeur par défaut
+    Hero() 
+        : nom(""), pv(0), pvMax(0), attaque(0), defense(0), vitesse(0){}
 
-    Hero() : nom(""), pv(0), pvMax(0), attaque(0), defense(0), vitesse(0){}
-
+    // Constructeur avec paramètres
     Hero(string nom, int pv, int attaque, int defense, int vitesse) {
         this->nom = nom;
         this->pv = pv;
@@ -26,8 +34,10 @@ public :
         this->vitesse = vitesse; 
     }
 
+    // Destructeur virtuel (important pour l'héritage)
     virtual ~Hero() {}
 
+    // Affiche toutes les statistiques du héros
     void afficherStats() const {
             cout << nom << " PV : " << pv
                  << " Attaque : " << attaque
@@ -39,9 +49,11 @@ public :
             cout << endl;
     }
 
+    // Méthodes virtuelles pures 
     virtual int getClasse() const = 0; 
     virtual int calculerDegats(const Hero& cible) const = 0;
 
+    // Gestion de la perte de PV en tenant compte du bouclier
     virtual void perdrePV(int montant) {
         if (bouclier > 0) {
             int bloque = min(bouclier, montant);
@@ -52,6 +64,7 @@ public :
         if (pv < 0) pv = 0;
     }
 
+    // Effets appliqués au début du tour
     virtual void effetDebutTour() {
         if (saignement) {
             pv -= 5;
@@ -62,22 +75,28 @@ public :
             if (pv < 0) pv = 0;
         }
     }
+
+    // Effets appliqués à la fin du tour (rédéfinissable dans les classes concrètes)
     virtual void effetFinTour() {} 
 
+    // Vérifie si le héro est encore vivant
     bool estVivant() const {
         return pv > 0; 
     }
 
+    // Getters
     int getDefense() const { return defense; }
     int getAttaque() const { return attaque; }
     int getVitesse() const { return vitesse; }
     int getPV() const { return pv; }
     int getPVMax() const { return pvMax; }
 
+    // Restaure entièrement les PV
     virtual void restaurerPV() {
         pv = pvMax; 
     }
 
+    // Application des états
     void appliquerSaignement() { saignement = true; }
     void appliquerBrulure() { brulure = true; }
     void ajouterBouclier(int montant) { bouclier += montant; }
@@ -86,45 +105,60 @@ public :
 
 /* =========================
    GUERRIER
-   ========================= */
+   ========================= 
+   Classe dérivée de Hero.
+   Plus il perd ses PV plus il cause de dégâts et devient plus fort.
+   Stat principale: la défense
+
+   */
 class Guerrier : public Hero {
 public: 
+    // Constructeur qui appele le constructeur de Hero
     Guerrier(string nom, int pv, int attaque, int defense, int vitesse)
         : Hero(nom, pv, attaque, defense, vitesse) {}
 
+    // Getter de classe utile pour l'affichage
     int getClasse() const override {
         return 1;
     }
 
+    // Calcul de dégâts infligés à une cible
     int calculerDegats(const Hero& cible) const override {
         float bonus = 1.0f;
 
+        // Si les PV < 30% des PV max les dégâts augmentent de 20%
         if (pv < 0.3f * pvMax) {
             bonus = 1.2f;
         }
-
+        // Dégâts proportionnels à l'attaque et à la défense adverse
         int degats = (attaque * bonus) / max(1, cible.getDefense());
+        // Garantit au moins 1 point de dégâts
         return max(1, degats);
     }
 };
 
 /* =========================
    MAGE
-   ========================= */
+   ========================= 
+   Classe dérivée de Hero.
+   Ignore partiellement (30%) la défense adverse
+   Stat principale : attaque*/
 class Mage : public Hero {
 public:
+    // Constructeur qui appelle le constructeur de la classe Hero
     Mage(string nom, int pv, int attaque, int defense, int vitesse)
         : Hero(nom, pv, attaque, defense, vitesse) {}
-
+    // Getter de la classe
     int getClasse() const override {
         return 2;
     }
 
+    // Calcul de dégâts 
     int calculerDegats(const Hero& cible) const override {
+        // Réduction de la défense adverse de 30%
         int defenseReduite = cible.getDefense() * 0.7;
-
         float facteur = 0.8f + (rand() % 41) / 100.0f;
-
+        // Dégâts proportionnels à l'attaque et à la défense adverse
         int degats = (attaque / max(1, defenseReduite)) * facteur;
         return max(1, degats);
     }
@@ -132,19 +166,25 @@ public:
 
 /* =========================
    ARCHER
-   ========================= */
+   ========================= 
+   Classe dérivée de Hero
+   Classe agile qui peut infliger un coup critique (dégâts x 2)
+   Peu de chances d'esquive
+   */
 class Archer : public Hero {
 public:
+    // Constructeur qui appelle le constructeur de la classe Hero
     Archer(string nom, int pv, int attaque, int defense, int vitesse)
         : Hero(nom, pv, attaque, defense, vitesse) {}
-
+    // Getter de la classe 
     int getClasse() const override {
         return 3;
     }
 
+    // Calcul des dégâts
     int calculerDegats(const Hero& cible) const override {
         int degats = attaque / max(1, cible.getDefense());
-
+        // 20% de chance de faire un coup critique (coup critique = dégâts * 2)
         if (rand() % 100 < 20) {
             degats *= 2;
         }
@@ -152,27 +192,39 @@ public:
         return max(1, degats);
     }
 
+    // Redéfinition de la perte de PV pour ajouter l'esquive
     void perdrePV(int montant) override {
+        // 15% de chances d'esquiver complètement l'attaque
         if (rand() % 100 < 15) {
             return; // esquive
         }
+        // sinon comportement classique
         Hero::perdrePV(montant);
     }
 };
 
 /* =========================
    PALADIN
-   ========================= */
+   ========================= 
+   Classe dérivée de Hero
+   classe défensive avec regénération automatique
+   */
 
 class Paladin : public Hero {
 public:
+    // Constructeur de Palladin
     Paladin(string nom, int pv, int attaque, int defense, int vitesse)
         : Hero(nom, pv, attaque, defense, vitesse) {}
+    // Getter de la classe (identifiant utile pour l'affichage)
     int getClasse() const override { return 4; }
+
+    // Calcul de dégâts
     int calculerDegats(const Hero& cible) const override {
         int degats = attaque / max(1, cible.getDefense());
         return max(1, degats);
     }
+
+    // Régénération de PV en fin de tour
     void effetFinTour() override {
         int regen = max(1, static_cast<int>(pvMax * 0.05));
         pv += regen;
@@ -182,18 +234,30 @@ public:
 
 /* =========================
    ASSASSIN
-   ========================= */
+   ========================= 
+   Classe dérivée de Hero
+   Classe qui cause beaucoup de dégâts mais est instables.
+   */
 
 class Assassin : public Hero {
 public:
+    // Constructeur de la classe
     Assassin(string nom, int pv, int attaque, int defense, int vitesse)
         : Hero(nom, pv, attaque, defense, vitesse) {}
+    // Getter de la classe
     int getClasse() const override { return 5; }
+
+    // Calcul de dégâts
     int calculerDegats(const Hero& cible) const override {
+        // bonus de dégâts de base (1.5)
         int degats = attaque * 1.5 / max(1, cible.getDefense());
+
+        // 40% de coup critique (dégâts * 2)
         if (rand() % 100 < 40) degats *= 2;
         return max(1, degats);
     }
+    
+    // Régénération identique au Paladin
     void effetFinTour() override {
         int regen = max(1, static_cast<int>(pvMax * 0.05));
         pv += regen;
