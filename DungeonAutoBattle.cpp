@@ -34,6 +34,16 @@ public :
         this->vitesse = vitesse; 
     }
 
+    // Constructeur par copie 
+    Hero(const Hero& autre): nom(autre.nom), pv(autre.pv),
+    pvMax(autre.pvMax),
+    attaque(autre.attaque),
+    defense(autre.defense),
+    vitesse(autre.vitesse),
+    saignement(autre.saignement),
+    brulure(autre.brulure),
+    bouclier(autre.bouclier) {}
+
     // Destructeur virtuel (important pour l'héritage)
     virtual ~Hero() {}
 
