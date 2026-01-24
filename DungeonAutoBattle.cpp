@@ -158,6 +158,7 @@ public:
     // Constructeur qui appelle le constructeur de la classe Hero
     Mage(string nom, int pv, int attaque, int defense, int vitesse)
         : Hero(nom, pv, attaque, defense, vitesse) {}
+
     // Getter de la classe
     int getClasse() const override {
         return 2;
@@ -481,16 +482,51 @@ int combatEquipes(Joueur& j1, Joueur& j2) {
     // Enchainement des combats entre les héros
     while (i<3 && j<3) {
         cout << "\nCombat entre : " <<j1.getNom() <<" (Héros : " << i + 1 << ") et "<< j2.getNom() << "(Héros : "<< j + 1<< ")\n"; 
+
+
+        // Utilisation des objets
+        if (rand() % 100 < 25) { // 25% de chance pour le joueur 1
+            // la potion va restaurer des pv
+            Potion potion;
+            cout << "[Objet] " << j1.getNom()
+                 << " utilise une potion avant le combat.\n";
+            potion.appliquer(*equipe1[i]);
+        }
+
+        if (rand() % 100 < 25) { // 25% de chance pour le joueur 2
+            // la potion va restaurer des pv 
+            Potion potion;
+            cout << "[Objet] " << j2.getNom()
+                 << " utilise une potion avant le combat.\n";
+            potion.appliquer(*equipe2[j]);
+        }
+        
+        // lancement du combat entre les deux héros
         int gagnant = combat(equipe1[i], equipe2[j]);
+
 
         // Le héros gagnant récupère ses PV initiaux
         if (gagnant == 1) {
             cout << j1.getNom() << " remporte ce duel ! ";
             equipe1[i]->restaurerPV();
+
+            // un bonus d'objet peut être accordé au vainqueur selon une chance 
+            if (rand() % 100 < 20) { // 20% de chance
+                Anneau anneau;
+                cout << "[Objet] Bonus accordé au héros victorieux.\n";
+                anneau.appliquer(*equipe1[i]);
+            }
             j++;
         }else{
             cout << j2.getNom() << " remporte ce duel ! ";
             equipe2[j]->restaurerPV();
+            
+            // un bonus d'objet peut être accordé au vainqueur selon une chance 
+            if (rand() % 100 < 20) {
+                Anneau anneau;
+                cout << "[Objet] Bonus accordé au héros victorieux.\n";
+                anneau.appliquer(*equipe2[j]);
+            }
             i++;
         }
 
